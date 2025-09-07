@@ -1,0 +1,36 @@
+Nome do Fluxo: "WealthFlow_SaaS_Completo_v1"
+
+**Objetivo:** Processar dados de mercado, gerar sinais, distribuir para os pacotes certos E rastrear afiliados/comissões.
+
+**Acionador (Trigger):**
+- Agendado para executar a cada 5 minutos.
+
+**Ações (Actions):**
+
+1.  **Fetch Market Data (Buscar Dados de Mercado):**
+    - Usar módulo `HTTP Request` ou conector nativo para `Alpha Vantage` e `CoinGecko`.
+    - Buscar preços, volume, RSI para a lista de ativos monitorados.
+
+2.  **Fetch Social Sentiment (Buscar Sentimento Social):**
+    - Usar módulo `HTTP Request` para buscar posts recentes do Reddit (r/wallstreetbets, r/cryptocurrency) via API.
+    - Usar conector `OpenAI` para analisar o lote de posts com o prompt: "Analise o sentimento geral deste conjunto de posts de investimento. Classifique como 'ALTÍSSIMO', 'ALTO', 'MÉDIO' ou 'BAIXO'. Identifique palavras-chave de bomba (pump, moon, squeeze) e cite os 3 ativos mais mencionados."
+
+3.  **Decisão de Sinal (Lógica do Núcleo):**
+    - Usar módulo `If/Else` ou `Switch`.
+    - Condição: SE volume > 200% da média DOS ÚLTIMOS 30min E RSI < 30 E sentimento == "ALTÍSSIMO" para o ativo X -> Gera um sinal "OURO".
+    - Condição: SE volume > 150% E sentimento == "ALTO" -> Gera um sinal "PRATA".
+    - Condição: SE sentimento == "ALTO" -> Gera um sinal "BRONZE".
+
+4.  **Processar Comissões e Afiliados (O Segredo):**
+    - **Antes de enviar o sinal,** usar módulo `HTTP Request` para consultar sua própria API ou uma planilha online (Google Sheets via API).
+    - **Objetivo:** Verificar qual afiliado trouxe o usuário que vai receber este sinal.
+    - **Lógica:** "Para o usuário [email_do_cliente], quem é o `código_de_afiliado` cadastrado?"
+
+5.  **Distribuir Sinais e Registrar Comissões:**
+    - Usar módulo `Switch` para cada tipo de sinal.
+    - Para sinal "OURO":
+        - `HTTP Request` (POST) para a API do Telegram para enviar mensagem ao canal VIP.
+        - **IMEDIATAMENTE APÓS,** usar `HTTP Request` para registrar na planilha/comissionamento: "Sinal Ouro enviado para [user]. Afiliado [afiliado_id] deve receber [€X]."
+
+6.  **Atualizar Estatísticas do Afiliado:**
+    - Usar módulo `HTTP Request` para atualizar o dashboard do afiliado (pode ser outra planilha Google ou um app simples) com a comissão gerada.
